@@ -1,0 +1,146 @@
+.container {
+    padding-bottom: var(--spacing-2xl);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--spacing-xl);
+}
+
+.backLink {
+    display: inline-block;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.primaryButton {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.secondaryButton {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-lg);
+    align-items: start;
+}
+
+.card {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.cardTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detailsRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.value {
+    font-size: 1.125rem;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.statusBox {
+    background-color: rgba(6, 182, 212, 0.1);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    color: var(--color-secondary);
+}
+
+.statusText {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.locationText {
+    font-weight: 500;
+}
+
+.timeText {
+    font-size: 0.75rem;
+    margin-top: var(--spacing-sm);
+    opacity: 0.8;
+}
+
+.driverInfo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.driverAvatar {
+    width: 48px;
+    height: 48px;
+    background: var(--color-primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-surface);
+    font-weight: 600;
+}
+
+.driverName {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.driverId {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
