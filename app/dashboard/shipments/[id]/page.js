@@ -2,6 +2,7 @@
 import { getShipmentById } from "@/lib/data";
 import Timeline from "@/components/Timeline";
 import ShipmentActions from "@/components/ShipmentActions";
+import ClientShipmentView from "@/components/ClientShipmentView";
 import styles from "./page.module.css";
 import Link from "next/link";
 
@@ -11,7 +12,7 @@ export default async function ShipmentDetailPage({ params, searchParams }) {
     const shipment = await getShipmentById(id);
 
     if (!shipment) {
-        return <div>Shipment not found</div>;
+        return <ClientShipmentView id={id} />;
     }
 
     return (

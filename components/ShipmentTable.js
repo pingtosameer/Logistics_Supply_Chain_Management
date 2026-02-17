@@ -38,7 +38,7 @@ export default function ShipmentTable({ shipments }) {
                             <td data-label="Destination">{shipment.destination}</td>
                             <td data-label="Est. Delivery">{new Date(shipment.estimatedDelivery).toLocaleDateString()}</td>
                             <td data-label="Actions">
-                                <Link href={`/tracking/${shipment.id}`} className={styles.actionLink}>
+                                <Link href={`/dashboard/shipments/${shipment.id}`} className={styles.actionLink}>
                                     View
                                 </Link>
                             </td>
