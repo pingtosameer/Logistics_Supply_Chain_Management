@@ -57,8 +57,25 @@ export function DriverProvider({ children }) {
         setDrivers((prevDrivers) => prevDrivers.filter(driver => driver.id !== id));
     };
 
+    const assignShipmentToDriver = (driverId, shipmentId, shipmentStatus) => {
+        setDrivers(prevDrivers => prevDrivers.map(d => {
+            if (d.id === driverId) {
+                const newAssignment = {
+                    id: shipmentId,
+                    date: new Date().toISOString().split('T')[0],
+                    status: shipmentStatus || 'In Transit'
+                };
+                const filtered = (d.recentAssignments || []).filter(a => a.id !== shipmentId);
+                return { ...d, recentAssignments: [newAssignment, ...filtered] };
+            }
+            // Remove the shipment from any other driver
+            const filteredOther = (d.recentAssignments || []).filter(a => a.id !== shipmentId);
+            return { ...d, recentAssignments: filteredOther };
+        }));
+    };
+
     return (
-        <DriverContext.Provider value={{ drivers, addDriver, removeDriver }}>
+        <DriverContext.Provider value={{ drivers, addDriver, removeDriver, assignShipmentToDriver }}>
             {children}
         </DriverContext.Provider>
     );

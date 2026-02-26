@@ -31,10 +31,13 @@ export default function ShipmentList({ initialShipments }) {
                     onChange={(e) => setFilter(e.target.value)}
                 >
                     <option value="all">All Statuses</option>
+                    <option value="Shipment Created & Pick Up Pending">Shipment Created & Pick Up Pending</option>
+                    <option value="Pickup Done">Pickup Done</option>
                     <option value="In Transit">In Transit</option>
-                    <option value="Delivered">Delivered</option>
                     <option value="Delayed">Delayed</option>
-                    <option value="Pending">Pending</option>
+                    <option value="Misrouted">Misrouted</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Returned">Returned</option>
                 </select>
             </div>
             {filteredShipments.length > 0 ? (

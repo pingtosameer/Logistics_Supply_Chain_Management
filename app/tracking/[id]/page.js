@@ -28,7 +28,7 @@ export default async function TrackingPage({ params, searchParams }) {
             case "Delivered": return "var(--color-success)";
             case "In Transit": return "var(--color-secondary)";
             case "Delayed": return "var(--color-error)";
-            case "Pending": return "var(--color-accent)";
+            case "Shipment Created & Pick Up Pending": return "var(--color-accent)";
             default: return "var(--color-text-muted)";
         }
     };
@@ -36,7 +36,7 @@ export default async function TrackingPage({ params, searchParams }) {
     // Determine progress percentage based on status
     const getProgress = (status) => {
         switch (status) {
-            case "Pending": return 10;
+            case "Shipment Created & Pick Up Pending": return 10;
             case "In Transit": return 60;
             case "Delayed": return 60;
             case "Delivered": return 100;
@@ -70,7 +70,7 @@ export default async function TrackingPage({ params, searchParams }) {
                             <span className={styles.pointLabel}>{shipment.origin.split(',')[0]}</span>
                         </div>
                         <div className={styles.point}>
-                            <div className={`${styles.dot} ${shipment.status !== 'Pending' ? styles.activePoint : ''}`} style={{ borderColor: getStatusColor(shipment.status) }}></div>
+                            <div className={`${styles.dot} ${shipment.status !== 'Shipment Created & Pick Up Pending' ? styles.activePoint : ''}`} style={{ borderColor: getStatusColor(shipment.status) }}></div>
                             <span className={styles.pointLabel}>In Transit</span>
                         </div>
                         <div className={styles.point}>

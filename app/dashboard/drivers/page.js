@@ -49,9 +49,15 @@ export default function DriversPage() {
                             <Link href={`/dashboard/drivers/${driver.id}`} className={styles.actionBtn}>
                                 View Profile
                             </Link>
-                            <Link href="/tracking/TRK-IN-849201?returnTo=/dashboard/drivers" className={`${styles.actionBtn} ${styles.trackBtn}`}>
-                                Track
-                            </Link>
+                            {driver.recentAssignments && driver.recentAssignments.length > 0 ? (
+                                <Link href={`/tracking/${driver.recentAssignments[0].id}?returnTo=/dashboard/drivers`} className={`${styles.actionBtn} ${styles.trackBtn}`}>
+                                    Track
+                                </Link>
+                            ) : (
+                                <button className={`${styles.actionBtn} ${styles.trackBtn}`} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                                    No Assignment
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     if (confirm('Are you sure you want to remove this driver?')) {

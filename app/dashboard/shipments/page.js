@@ -13,7 +13,7 @@ export default function ShipmentsPage() {
         origin: '',
         destination: '',
         courier: 'FedEx',
-        status: 'Pending',
+        status: 'Shipment Created & Pick Up Pending',
         description: ''
     });
 
@@ -21,10 +21,11 @@ export default function ShipmentsPage() {
         const loadData = async () => {
             const serverShipments = await getAllShipments();
             const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-            // Merge, prioritizing local if duplicates existed (though IDs should be unique)
-            // For simplicity just appending local ones at the top or merging.
-            // Actually, let's just display all.
-            setShipments([...localShipments, ...serverShipments]);
+            // Deduplicate: If a shipment exists in localStorage, filter out the old server version
+            const localIds = new Set(localShipments.map(s => s.id));
+            const filteredServer = serverShipments.filter(s => !localIds.has(s.id));
+
+            setShipments([...localShipments, ...filteredServer]);
         };
         loadData();
     }, []);
@@ -51,7 +52,7 @@ export default function ShipmentsPage() {
             recipient: formData.recipient,
             origin: formData.origin,
             destination: formData.destination,
-            status: "Pending",
+            status: "Shipment Created & Pick Up Pending",
             courier: formData.courier,
             estimatedDelivery: "Calculating...",
             currentLocation: formData.origin,
@@ -79,7 +80,7 @@ export default function ShipmentsPage() {
             origin: '',
             destination: '',
             courier: 'FedEx',
-            status: 'Pending',
+            status: 'Shipment Created & Pick Up Pending',
             description: ''
         });
         setIsModalOpen(false);
@@ -158,8 +159,11 @@ export default function ShipmentsPage() {
                                     value={formData.status}
                                     onChange={handleInputChange}
                                 >
-                                    <option value="Pending">Pending</option>
+                                    <option value="Shipment Created & Pick Up Pending">Shipment Created & Pick Up Pending</option>
+                                    <option value="Pickup Done">Pickup Done</option>
                                     <option value="In Transit">In Transit</option>
+                                    <option value="Delayed">Delayed</option>
+                                    <option value="Misrouted">Misrouted</option>
                                     <option value="Delivered">Delivered</option>
                                     <option value="Returned">Returned</option>
                                 </select>
@@ -181,8 +185,9 @@ export default function ShipmentsPage() {
                             </div>
                         </form>
                     </div>
-                </div>
-            )}
-        </div>
+                </div >
+            )
+            }
+        </div >
     );
 }

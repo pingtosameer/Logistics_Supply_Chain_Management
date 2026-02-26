@@ -12,7 +12,9 @@ export default function Sidebar() {
     const links = [
         { href: "/dashboard", label: "Overview", icon: "📊" },
         { href: "/dashboard/shipments", label: "Shipments", icon: "📦" },
+        { href: "/dashboard/pickups", label: "Open Pickups", icon: "🏭" },
         { href: "/dashboard/drivers", label: "Drivers", icon: "🚚" },
+        { href: "/dashboard/pods", label: "Uploaded PODs", icon: "📄" },
         { href: "/dashboard/settings", label: "Settings", icon: "⚙️" },
     ];
 

@@ -11,6 +11,9 @@ export default function ClientShipmentView({ id }) {
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+    const [podUploaded, setPodUploaded] = useState(false);
+    const [podFileBase64, setPodFileBase64] = useState(null);
+    const [podFileName, setPodFileName] = useState('');
 
     // Edit Form State
     const [editForm, setEditForm] = useState({
@@ -38,8 +41,37 @@ export default function ClientShipmentView({ id }) {
         const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
         const found = localShipments.find(s => s.id === id);
         setShipment(found);
+        setPodUploaded(!!found?.podUploaded);
         setLoading(false);
     }, [id]);
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Delivered': return 'var(--color-success)';
+            case 'In Transit': return 'var(--color-primary)';
+            case 'Delayed': return 'var(--color-danger)';
+            case 'Pending': return 'var(--color-warning)';
+            case 'Returned': return 'var(--color-text-muted)';
+            case 'Misrouted': return '#ef4444';
+            case 'Pickup Done': return '#3b82f6';
+            case 'Shipment Created & Pick Up Pending': return '#8b5cf6';
+            default: return 'var(--color-text-muted)';
+        }
+    };
+
+    const getStatusBgColor = (status) => {
+        switch (status) {
+            case 'Delivered': return 'rgba(16, 185, 129, 0.1)';
+            case 'In Transit': return 'rgba(59, 130, 246, 0.1)';
+            case 'Delayed': return 'rgba(239, 68, 68, 0.1)';
+            case 'Pending': return 'rgba(245, 158, 11, 0.1)';
+            case 'Returned': return 'rgba(107, 114, 128, 0.1)';
+            case 'Misrouted': return 'rgba(239, 68, 68, 0.15)';
+            case 'Pickup Done': return 'rgba(59, 130, 246, 0.15)';
+            case 'Shipment Created & Pick Up Pending': return 'rgba(139, 92, 246, 0.15)';
+            default: return 'rgba(107, 114, 128, 0.1)';
+        }
+    };
 
     const handleEdit = () => {
         setEditForm({
@@ -79,14 +111,14 @@ export default function ClientShipmentView({ id }) {
     const saveStatus = (e) => {
         e.preventDefault();
         const newEvent = {
-            id: Date.now(),
+            id: Date.now().toString(),
             status: statusForm.status,
             location: statusForm.location,
             timestamp: new Date().toISOString(),
             description: statusForm.comment || `Shipment is ${statusForm.status}`
         };
 
-        const updatedShipment = {
+        let updatedShipment = {
             ...shipment,
             status: statusForm.status,
             currentLocation: statusForm.location,
@@ -94,7 +126,12 @@ export default function ClientShipmentView({ id }) {
             events: [newEvent, ...(shipment.events || [])]
         };
 
-        // Update local state
+        if (statusForm.status === 'Pickup Done') {
+            const today = new Date();
+            today.setDate(today.getDate() + 4);
+            updatedShipment.estimatedDelivery = today.toISOString().split('T')[0];
+        }
+
         setShipment(updatedShipment);
 
         // Update localStorage
@@ -186,12 +223,76 @@ export default function ClientShipmentView({ id }) {
                 <div className={styles.sidebar}>
                     <div className={styles.card}>
                         <h3 className={styles.cardTitle}>Current Status</h3>
-                        <div className={styles.statusBox}>
-                            <p className={styles.statusText}>{shipment.status}</p>
+                        <div className={styles.statusBox} style={{ backgroundColor: getStatusBgColor(shipment.status) }}>
+                            <p className={styles.statusText} style={{ color: getStatusColor(shipment.status) }}>{shipment.status}</p>
                             <p className={styles.locationText}>{shipment.currentLocation}</p>
                             <p className={styles.timeText}>Last updated: {new Date(shipment.lastUpdated).toLocaleString()}</p>
                         </div>
                     </div>
+
+                    {shipment.status === 'Delivered' && (
+                        <div className={styles.card}>
+                            <h2 className={styles.cardTitle}>Proof of Delivery (POD)</h2>
+                            {!podUploaded ? (
+                                <>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                                        Upload the signed POD document or image.
+                                    </p>
+                                    <input
+                                        type="file"
+                                        style={{ marginBottom: '1rem', width: '100%' }}
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                setPodFileName(file.name);
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setPodFileBase64(reader.result);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        className={styles.primaryButton}
+                                        style={{ width: '100%' }}
+                                        onClick={() => {
+                                            if (!podFileBase64) {
+                                                alert("Please select a file first.");
+                                                return;
+                                            }
+                                            // Save to local_pods 
+                                            const existingPods = JSON.parse(localStorage.getItem('local_pods') || '[]');
+                                            const newPod = {
+                                                shipmentId: id,
+                                                date: new Date().toISOString(),
+                                                fileData: podFileBase64,
+                                                fileName: podFileName
+                                            };
+                                            localStorage.setItem('local_pods', JSON.stringify([newPod, ...existingPods]));
+
+                                            // Mark podUploaded in local_shipments
+                                            const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
+                                            const updatedShipments = localShipments.map(s => {
+                                                if (s.id === id) return { ...s, podUploaded: true };
+                                                return s;
+                                            });
+                                            localStorage.setItem('local_shipments', JSON.stringify(updatedShipments));
+
+                                            alert("POD Uploaded successfully!");
+                                            setPodUploaded(true);
+                                        }}
+                                    >
+                                        Upload POD
+                                    </button>
+                                </>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-success)', fontWeight: 'bold' }}>
+                                    <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>✅</span> POD Uploaded
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -283,9 +384,12 @@ export default function ClientShipmentView({ id }) {
                                     onChange={(e) => setStatusForm({ ...statusForm, status: e.target.value })}
                                     style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
                                 >
+                                    <option value="Shipment Created & Pick Up Pending">Shipment Created & Pick Up Pending</option>
                                     <option value="Pending">Pending</option>
+                                    <option value="Pickup Done">Pickup Done</option>
                                     <option value="In Transit">In Transit</option>
                                     <option value="Delayed">Delayed</option>
+                                    <option value="Misrouted">Misrouted</option>
                                     <option value="Delivered">Delivered</option>
                                     <option value="Returned">Returned</option>
                                 </select>
