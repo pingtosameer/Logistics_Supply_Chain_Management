@@ -1,4 +1,3 @@
-
 import { getDashboardStats } from "@/lib/data";
 import StatsCard from "@/components/StatsCard";
 import RecentActivityChart from "@/components/RecentActivityChart";

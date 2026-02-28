@@ -5,8 +5,10 @@ import Link from "next/link";
 import styles from "@/app/dashboard/shipments/[id]/page.module.css";
 import Timeline from "@/components/Timeline";
 import ShipmentActions from "@/components/ShipmentActions";
+import { useDriver } from "@/components/DriverContext";
 
-export default function ClientShipmentView({ id }) {
+export default function ClientShipmentView({ id, initialShipment }) {
+    const { updateDriverShipmentStatus } = useDriver();
     const [shipment, setShipment] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -40,10 +42,17 @@ export default function ClientShipmentView({ id }) {
     useEffect(() => {
         const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
         const found = localShipments.find(s => s.id === id);
-        setShipment(found);
-        setPodUploaded(!!found?.podUploaded);
+        if (found) {
+            setShipment(found);
+            setPodUploaded(!!found.podUploaded);
+        } else if (initialShipment) {
+            setShipment(initialShipment);
+            setPodUploaded(!!initialShipment.podUploaded);
+        } else {
+            setShipment(null);
+        }
         setLoading(false);
-    }, [id]);
+    }, [id, initialShipment]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -100,9 +109,16 @@ export default function ClientShipmentView({ id }) {
         // Update local state
         setShipment(updatedShipment);
 
-        // Update localStorage
+        // Update localStorage overrides
         const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        const updatedList = localShipments.map(s => s.id === id ? updatedShipment : s);
+        const existingIndex = localShipments.findIndex(s => s.id === id);
+        let updatedList;
+        if (existingIndex >= 0) {
+            updatedList = [...localShipments];
+            updatedList[existingIndex] = updatedShipment;
+        } else {
+            updatedList = [updatedShipment, ...localShipments];
+        }
         localStorage.setItem('local_shipments', JSON.stringify(updatedList));
 
         setIsEditModalOpen(false);
@@ -134,10 +150,22 @@ export default function ClientShipmentView({ id }) {
 
         setShipment(updatedShipment);
 
-        // Update localStorage
+        // Update localStorage overrides
         const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        const updatedList = localShipments.map(s => s.id === id ? updatedShipment : s);
+        const existingIndex = localShipments.findIndex(s => s.id === id);
+        let updatedList;
+        if (existingIndex >= 0) {
+            updatedList = [...localShipments];
+            updatedList[existingIndex] = updatedShipment;
+        } else {
+            updatedList = [updatedShipment, ...localShipments];
+        }
         localStorage.setItem('local_shipments', JSON.stringify(updatedList));
+
+        // Sync globally with driver context
+        if (updateDriverShipmentStatus) {
+            updateDriverShipmentStatus(id, statusForm.status);
+        }
 
         setIsStatusModalOpen(false);
     };
@@ -245,9 +273,36 @@ export default function ClientShipmentView({ id }) {
                                             const file = e.target.files[0];
                                             if (file) {
                                                 setPodFileName(file.name);
+
+                                                // Create a FileReader to read the file
                                                 const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    setPodFileBase64(reader.result);
+                                                reader.onloadend = (event) => {
+                                                    // Create an image element to draw the file onto a canvas for compression
+                                                    const img = new Image();
+                                                    img.onload = () => {
+                                                        const canvas = document.createElement('canvas');
+                                                        const MAX_WIDTH = 800; // Compress to max 800px width
+                                                        const scaleSize = MAX_WIDTH / img.width;
+
+                                                        let newWidth = img.width;
+                                                        let newHeight = img.height;
+
+                                                        if (scaleSize < 1) {
+                                                            newWidth = MAX_WIDTH;
+                                                            newHeight = img.height * scaleSize;
+                                                        }
+
+                                                        canvas.width = newWidth;
+                                                        canvas.height = newHeight;
+
+                                                        const ctx = canvas.getContext('2d');
+                                                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                                                        // Compress to aggressive JPEG (much smaller than standard Base64 PNGs)
+                                                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                                                        setPodFileBase64(compressedBase64);
+                                                    };
+                                                    img.src = event.target.result;
                                                 };
                                                 reader.readAsDataURL(file);
                                             }

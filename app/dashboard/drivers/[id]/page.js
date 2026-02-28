@@ -6,19 +6,47 @@ import CallDriverButton from "@/components/CallDriverButton";
 import { useDriver } from "@/components/DriverContext";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getAllShipments } from "@/lib/data";
 
 export default function DriverProfile() {
     const params = useParams();
     const { drivers } = useDriver();
     const [driver, setDriver] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [dateFilter, setDateFilter] = useState('all');
 
     useEffect(() => {
-        if (params?.id && drivers.length > 0) {
-            const foundDriver = drivers.find(d => d.id === params.id);
-            setDriver(foundDriver);
-            setLoading(false);
-        }
+        const loadDriverDetails = async () => {
+            if (params?.id && drivers.length > 0) {
+                const foundDriver = drivers.find(d => d.id === params.id);
+                if (foundDriver) {
+                    try {
+                        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
+                        const dbShipments = await getAllShipments();
+
+                        const updatedAssignments = foundDriver.recentAssignments?.map(assignment => {
+                            const localMatch = localShipments.find(s => s.id === assignment.id);
+                            if (localMatch) return { ...assignment, status: localMatch.status };
+
+                            const dbMatch = dbShipments.find(s => s.id === assignment.id);
+                            if (dbMatch) return { ...assignment, status: dbMatch.status };
+
+                            return assignment;
+                        });
+
+                        setDriver({ ...foundDriver, recentAssignments: updatedAssignments || [] });
+                    } catch (error) {
+                        console.error("Error loading driver shipment details:", error);
+                        setDriver(foundDriver);
+                    }
+                } else {
+                    setDriver(null);
+                }
+                setLoading(false);
+            }
+        };
+
+        loadDriverDetails();
     }, [params, drivers]);
 
     if (loading) {
@@ -36,6 +64,33 @@ export default function DriverProfile() {
         );
     }
 
+    // Filter assignments by date
+    const getFilteredAssignments = () => {
+        if (!driver.recentAssignments) return [];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        const last7Days = new Date();
+        last7Days.setDate(today.getDate() - 7);
+        const last7Str = last7Days.toISOString().split('T')[0];
+
+        const last30Days = new Date();
+        last30Days.setDate(today.getDate() - 30);
+        const last30Str = last30Days.toISOString().split('T')[0];
+
+        return driver.recentAssignments.filter(assignment => {
+            if (dateFilter === 'today') return assignment.date === todayStr;
+            if (dateFilter === 'week') return assignment.date >= last7Str;
+            if (dateFilter === 'month') return assignment.date >= last30Str;
+            return true;
+        });
+    };
+
+    const filteredAssignments = getFilteredAssignments();
+    const deliveredCount = filteredAssignments.filter(a => a.status === 'Delivered').length;
+    const openCount = filteredAssignments.length - deliveredCount;
+
     return (
         <div className={styles.container}>
             <Link href="/dashboard/drivers" className={styles.backLink}>← Back to Fleet</Link>
@@ -45,7 +100,11 @@ export default function DriverProfile() {
                     <div className={styles.avatar}>{driver.name.charAt(0)}</div>
                     <div>
                         <h1 className={styles.name}>{driver.name}</h1>
-                        <p className={styles.id}>ID: {driver.id}</p>
+                        <p className={styles.id}>
+                            ID: {driver.id}
+                            {driver.region ? ` • ${driver.region} Region` : ''}
+                            {driver.location ? ` • ${driver.location}` : ''}
+                        </p>
                     </div>
                 </div>
                 <div className={styles.headerActions}>
@@ -70,14 +129,41 @@ export default function DriverProfile() {
                 </div>
 
                 <div className={styles.card}>
-                    <h3 className={styles.cardTitle}>Performance</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 className={styles.cardTitle} style={{ margin: 0 }}>Summary ({dateFilter === 'all' ? 'All Time' : dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'Last 7 Days' : 'This Month'})</h3>
+                        <select
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                        >
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
+
                     <div className={styles.detailRow}>
                         <span>Rating</span>
                         <strong className={styles.rating}>★ {driver.rating || "New"}</strong>
                     </div>
+                    {driver.experience && (
+                        <div className={styles.detailRow}>
+                            <span>Experience</span>
+                            <strong>{driver.experience} Years</strong>
+                        </div>
+                    )}
                     <div className={styles.detailRow}>
-                        <span>Total Deliveries</span>
-                        <strong>{driver.totalDeliveries || 0}</strong>
+                        <span>Total Shipments</span>
+                        <strong style={{ color: 'var(--color-text)' }}>{filteredAssignments.length}</strong>
+                    </div>
+                    <div className={styles.detailRow}>
+                        <span>Open Shipments</span>
+                        <strong style={{ color: 'var(--color-primary)' }}>{openCount}</strong>
+                    </div>
+                    <div className={styles.detailRow}>
+                        <span>Delivered Shipments</span>
+                        <strong style={{ color: 'var(--color-success)' }}>{deliveredCount}</strong>
                     </div>
                 </div>
 
@@ -95,8 +181,8 @@ export default function DriverProfile() {
             </div>
 
             <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Recent Assignments</h2>
-                {driver.recentAssignments && driver.recentAssignments.length > 0 ? (
+                <h2 className={styles.sectionTitle}>Assigned Shipments</h2>
+                {filteredAssignments.length > 0 ? (
                     <table className={styles.table}>
                         <thead>
                             <tr>
@@ -107,7 +193,7 @@ export default function DriverProfile() {
                             </tr>
                         </thead>
                         <tbody>
-                            {driver.recentAssignments.map(assignment => (
+                            {filteredAssignments.map(assignment => (
                                 <tr key={assignment.id}>
                                     <td data-label="Shipment ID">{assignment.id}</td>
                                     <td data-label="Date">{assignment.date}</td>
@@ -119,7 +205,7 @@ export default function DriverProfile() {
                     </table>
                 ) : (
                     <div className={styles.emptyState}>
-                        <p>No recent assignments found for this driver.</p>
+                        <p>No assignments found for this timeframe.</p>
                     </div>
                 )}
             </div>

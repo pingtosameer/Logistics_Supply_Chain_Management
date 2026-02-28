@@ -88,11 +88,24 @@ export default function PodsPage() {
                         <div style={{
                             width: '100%', height: '400px', backgroundColor: '#f9fafb',
                             border: '2px dashed #ddd', borderRadius: '8px',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            overflow: 'hidden'
                         }}>
-                            <span style={{ fontSize: '4rem', marginBottom: '1rem' }}>🧾</span>
-                            <h3 style={{ color: '#6b7280' }}>Mock Document Graphic</h3>
-                            <p style={{ color: '#9ca3af', marginTop: '0.5rem' }}>Uploaded on: {new Date(selectedPod.date).toLocaleString()}</p>
+                            {selectedPod.fileData && selectedPod.fileData.startsWith('data:image') ? (
+                                <img
+                                    src={selectedPod.fileData}
+                                    alt={`POD for ${selectedPod.shipmentId}`}
+                                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                />
+                            ) : (
+                                <>
+                                    <span style={{ fontSize: '4rem', marginBottom: '1rem' }}>🧾</span>
+                                    <h3 style={{ color: '#6b7280' }}>
+                                        {selectedPod.fileData ? 'File Preview Not Available' : 'Mock Document Graphic'}
+                                    </h3>
+                                    <p style={{ color: '#9ca3af', marginTop: '0.5rem' }}>Uploaded on: {new Date(selectedPod.date).toLocaleString()}</p>
+                                </>
+                            )}
                         </div>
 
                         <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>

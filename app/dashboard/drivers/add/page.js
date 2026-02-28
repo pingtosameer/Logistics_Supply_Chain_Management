@@ -3,26 +3,53 @@
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDriver } from "@/components/DriverContext";
+
+const REGION_CITIES = {
+    "Mumbai": ["Mumbai Central", "Andheri", "Bandra", "Navi Mumbai", "Bhiwandi Hub", "Thane", "Dadar"],
+    "Pune": ["Pune City", "Kothrud", "Hinjewadi", "Viman Nagar", "Pune Highway", "Pimpri-Chinchwad"],
+    "Bangalore": ["Indiranagar", "Koramangala", "Whitefield", "Jayanagar", "Electronic City", "Malleswaram"],
+    "Delhi": ["New Delhi", "Dwarka", "Rohini", "Connaught Place", "Vasant Kunj", "Karol Bagh"],
+    "Kolkata": ["Salt Lake", "New Town", "Park Street", "Howrah", "Alipore", "Dum Dum"],
+    "Other": ["Other"]
+};
 
 export default function AddDriverPage() {
     const router = useRouter();
     const { addDriver } = useDriver();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedRegion, setSelectedRegion] = useState("");
+    const [customRegion, setCustomRegion] = useState("");
+    const [selectedCity, setSelectedCity] = useState("");
+    const [customCity, setCustomCity] = useState("");
+    const [availableCities, setAvailableCities] = useState([]);
+
+    useEffect(() => {
+        if (selectedRegion && REGION_CITIES[selectedRegion]) {
+            setAvailableCities(REGION_CITIES[selectedRegion]);
+        } else {
+            setAvailableCities([]);
+        }
+    }, [selectedRegion]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         const formData = new FormData(e.target);
+        const finalRegion = selectedRegion === "Other" ? customRegion.trim() : selectedRegion;
+        const finalCity = selectedCity === "Other" ? customCity.trim() : selectedCity;
+
         const newDriver = {
             name: formData.get("name"),
             vehicle: formData.get("vehicle"),
             phone: formData.get("phone"),
             email: formData.get("email"),
             status: formData.get("status"),
-            location: "Depot (Default)", // Default location for new drivers
+            region: finalRegion,
+            location: finalCity,
+            experience: formData.get("experience"),
         };
 
         addDriver(newDriver);
@@ -43,7 +70,7 @@ export default function AddDriverPage() {
 
             <form className={styles.form} onSubmit={handleSubmit}>
                 <div className={styles.formGroup}>
-                    <label className={styles.label} htmlFor="name">Full Name</label>
+                    <label className={styles.label} htmlFor="name">Full Name <span style={{ color: 'red' }}>*</span></label>
                     <input
                         type="text"
                         id="name"
@@ -55,7 +82,7 @@ export default function AddDriverPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                    <label className={styles.label} htmlFor="vehicle">Vehicle</label>
+                    <label className={styles.label} htmlFor="vehicle">Vehicle <span style={{ color: 'red' }}>*</span></label>
                     <input
                         type="text"
                         id="vehicle"
@@ -67,7 +94,7 @@ export default function AddDriverPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                    <label className={styles.label} htmlFor="phone">Phone Number</label>
+                    <label className={styles.label} htmlFor="phone">Phone Number <span style={{ color: 'red' }}>*</span></label>
                     <input
                         type="tel"
                         id="phone"
@@ -96,6 +123,81 @@ export default function AddDriverPage() {
                         <option value="Idle">Idle</option>
                         <option value="On Leave">On Leave</option>
                     </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="region">Region <span style={{ color: 'red' }}>*</span></label>
+                    <select
+                        id="regionSelect"
+                        className={styles.select}
+                        required
+                        value={selectedRegion}
+                        onChange={(e) => {
+                            setSelectedRegion(e.target.value);
+                            setSelectedCity("");
+                            setCustomCity("");
+                        }}
+                    >
+                        <option value="" disabled>Select a Region</option>
+                        <option value="Mumbai">Mumbai</option>
+                        <option value="Pune">Pune</option>
+                        <option value="Bangalore">Bangalore</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Kolkata">Kolkata</option>
+                        <option value="Other">Other (Enter Manually)</option>
+                    </select>
+                    {selectedRegion === "Other" && (
+                        <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Type new region..."
+                            value={customRegion}
+                            onChange={(e) => setCustomRegion(e.target.value)}
+                            style={{ marginTop: '0.5rem' }}
+                            required
+                        />
+                    )}
+                </div>
+
+                <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="city">City (Hired Location) <span style={{ color: 'red' }}>*</span></label>
+                    <select
+                        id="citySelect"
+                        className={styles.select}
+                        required
+                        disabled={!selectedRegion}
+                        value={selectedCity}
+                        onChange={(e) => setSelectedCity(e.target.value)}
+                    >
+                        <option value="" disabled>{selectedRegion ? "Select a City" : "Select a Region first"}</option>
+                        {availableCities.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                        ))}
+                    </select>
+                    {selectedCity === "Other" && (
+                        <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Type new city..."
+                            value={customCity}
+                            onChange={(e) => setCustomCity(e.target.value)}
+                            style={{ marginTop: '0.5rem' }}
+                            required
+                        />
+                    )}
+                </div>
+
+                <div className={styles.formGroup}>
+                    <label className={styles.label} htmlFor="experience">Experience (Years) <span style={{ color: 'red' }}>*</span></label>
+                    <input
+                        type="number"
+                        id="experience"
+                        name="experience"
+                        className={styles.input}
+                        placeholder="e.g. 5"
+                        min="0"
+                        required
+                    />
                 </div>
 
                 <div className={styles.actions}>

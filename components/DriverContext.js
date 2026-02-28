@@ -6,17 +6,29 @@ const DriverContext = createContext();
 
 export function DriverProvider({ children }) {
     const [drivers, setDrivers] = useState([
-        { id: "DRV-001", name: "Rajesh Kumar", vehicle: "Tata Ace", status: "Active", location: "Mumbai Central", phone: "+91 98765 43210", altPhone: "+91 70200 12345" },
-        { id: "DRV-002", name: "Suresh Singh", vehicle: "Mahindra Bolero", status: "In Transit", location: "Pune Highway", phone: "+91 91234 56789", altPhone: "+91 99880 00000" },
-        { id: "DRV-003", name: "Vikram Malhotra", vehicle: "Eicher Pro", status: "Idle", location: "Bhiwandi Hub", phone: "+91 99887 76655" },
-        { id: "DRV-004", name: "Anita Desai", vehicle: "Scooter (Last Mile)", status: "Active", location: "Indiranagar, BLR", phone: "+91 88990 01122" },
+        { id: "DRV-001", name: "Rajesh Kumar", vehicle: "Tata Ace", status: "Active", location: "Mumbai Central", region: "Mumbai", phone: "+91 98765 43210", altPhone: "+91 70200 12345" },
+        { id: "DRV-002", name: "Suresh Singh", vehicle: "Mahindra Bolero", status: "In Transit", location: "Pune Highway", region: "Pune", phone: "+91 91234 56789", altPhone: "+91 99880 00000" },
+        { id: "DRV-003", name: "Vikram Malhotra", vehicle: "Eicher Pro", status: "Idle", location: "Bhiwandi Hub", region: "Mumbai", phone: "+91 99887 76655" },
+        { id: "DRV-004", name: "Anita Desai", vehicle: "Scooter (Last Mile)", status: "Active", location: "Indiranagar, BLR", region: "Bangalore", phone: "+91 88990 01122" },
     ]);
 
     // Load from localStorage on mount
     useEffect(() => {
         const saved = localStorage.getItem('drivers');
         if (saved) {
-            setDrivers(JSON.parse(saved));
+            const parsed = JSON.parse(saved).map(d => {
+                // Migration: assign region if missing based on location
+                if (!d.region) {
+                    if (d.location.toLowerCase().includes("mumbai") || d.location.toLowerCase().includes("bhiwandi")) d.region = "Mumbai";
+                    else if (d.location.toLowerCase().includes("pune")) d.region = "Pune";
+                    else if (d.location.toLowerCase().includes("blr") || d.location.toLowerCase().includes("bangalore")) d.region = "Bangalore";
+                    else if (d.location.toLowerCase().includes("delhi")) d.region = "Delhi";
+                    else if (d.location.toLowerCase().includes("kolkata")) d.region = "Kolkata";
+                    else d.region = "Other";
+                }
+                return d;
+            });
+            setDrivers(parsed);
         }
     }, []);
 
@@ -74,8 +86,25 @@ export function DriverProvider({ children }) {
         }));
     };
 
+    const updateDriverShipmentStatus = (shipmentId, newStatus) => {
+        setDrivers(prevDrivers => prevDrivers.map(d => {
+            if (!d.recentAssignments) return d;
+
+            let updated = false;
+            const newAssignments = d.recentAssignments.map(a => {
+                if (a.id === shipmentId) {
+                    updated = true;
+                    return { ...a, status: newStatus };
+                }
+                return a;
+            });
+
+            return updated ? { ...d, recentAssignments: newAssignments } : d;
+        }));
+    };
+
     return (
-        <DriverContext.Provider value={{ drivers, addDriver, removeDriver, assignShipmentToDriver }}>
+        <DriverContext.Provider value={{ drivers, addDriver, removeDriver, assignShipmentToDriver, updateDriverShipmentStatus }}>
             {children}
         </DriverContext.Provider>
     );

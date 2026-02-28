@@ -1,0 +1,91 @@
+.bannerContainer {
+    width: 100%;
+    background: linear-gradient(90deg, #f0fdf4 0%, #faf5ff 50%, #eff6ff 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xl);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle decorative shapes can go here if needed via ::before/::after */
+.bannerContainer::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(167, 243, 208, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+}
+
+.bannerContainer::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    right: 10%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(191, 219, 254, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.content {
+    flex: 1;
+    z-index: 1;
+    text-align: center;
+}
+
+.title {
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.subtitle {
+    color: #64748b;
+    font-size: 1rem;
+}
+
+.action {
+    z-index: 1;
+    margin-left: var(--spacing-2xl);
+}
+
+.scheduleBtn {
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    padding: var(--spacing-md) var(--spacing-2xl);
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
+    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+}
+
+.scheduleBtn:hover {
+    background: #7c3aed;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .bannerContainer {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--spacing-lg);
+    }
+
+    .action {
+        margin-left: 0;
+        margin-top: var(--spacing-lg);
+    }
+}

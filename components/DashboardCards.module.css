@@ -1,0 +1,133 @@
+.card {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-border);
+    border-left-width: 8px;
+    height: 100%;
+}
+
+.cyanBorder {
+    border-left-color: #06b6d4;
+}
+
+.blueBorder {
+    border-left-color: #3b82f6;
+}
+
+.greenBorder {
+    border-left-color: #22c55e;
+}
+
+.cardTitle {
+    font-size: 1rem;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-lg);
+    font-weight: 500;
+}
+
+.statsGrid {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xl);
+}
+
+.statItem {
+    text-align: left;
+    flex: 1;
+}
+
+.statValueCyan {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #06b6d4;
+    margin-bottom: 4px;
+}
+
+.statValueBlue {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 4px;
+}
+
+.statLabel {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed var(--color-border);
+    padding-top: var(--spacing-md);
+    margin-top: auto;
+}
+
+.footerLink {
+    text-decoration: none;
+    color: #4f46e5;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.footerLink:hover {
+    text-decoration: underline;
+}
+
+/* Wallet Specifics */
+.walletContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.walletDetails {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.walletRow {
+    display: flex;
+    flex-direction: column;
+}
+
+.walletLabel {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.walletValue {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.walletValueNegative {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #dc2626;
+}
+
+.rechargeBtn {
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.billedInfo {
+    font-size: 0.8rem;
+    color: #64748b;
+}
