@@ -12,6 +12,14 @@ export default function DriversPage() {
     const [selectedDriver, setSelectedDriver] = useState(null);
     const [shipmentIdInput, setShipmentIdInput] = useState('');
     const [assignError, setAssignError] = useState('');
+    const [expandedRegions, setExpandedRegions] = useState({});
+
+    const toggleRegion = (regionName) => {
+        setExpandedRegions(prev => ({
+            ...prev,
+            [regionName]: !prev[regionName]
+        }));
+    };
 
     const handleAssignClick = (driver) => {
         setSelectedDriver(driver);
@@ -136,109 +144,119 @@ export default function DriversPage() {
                     }
                 }
 
+                const isExpanded = expandedRegions[region] === true; // Default to closed
+
                 return (
                     <div key={region} style={{ marginBottom: '2.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div
+                            className={styles.regionHeader}
+                            onClick={() => toggleRegion(region)}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                                <h2 style={{ fontSize: '1.25rem', color: 'var(--color-text)', margin: 0 }}>{region} Region</h2>
-                                <span style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', fontSize: '0.85rem', fontWeight: 600 }}>
-                                    Shipments: {'{'} Total: {totalRegionShipments}, Delivered: {totalRegionDelivered}, Open: {totalRegionShipments - totalRegionDelivered} {'}'}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '1.2rem', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▶</span>
+                                    <h2 style={{ fontSize: '1.25rem', color: 'var(--color-text)', margin: 0 }}>{region} Region</h2>
+                                </div>
+                                <span style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#4b5563', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', fontSize: '0.85rem', fontWeight: 600 }}>
+                                    Total Shipments: {totalRegionShipments}
                                 </span>
                                 <span style={{ background: perfBg, color: perfColor, padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', fontSize: '0.85rem', fontWeight: 600 }}>
                                     Performance: {performance}
                                 </span>
                             </div>
                             <span style={{ background: 'var(--color-primary-light)', color: 'var(--color-surface)', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', fontSize: '0.85rem', fontWeight: 600 }}>
-                                {regionDrivers.length} {regionDrivers.length === 1 ? 'Driver' : 'Drivers'}
+                                Total Drivers: {regionDrivers.length}
                             </span>
                         </div>
-                        {/* Add inline style to override CSS module variables if needed for specific column counts */}
-                        <div className={styles.grid} style={{ '--columns': 'auto-fill' }}>
-                            {regionDrivers.map((driver) => {
-                                const assignments = driver.recentAssignments || [];
-                                const deliveredCount = assignments.filter(a => a.status === 'Delivered').length;
-                                const openCount = assignments.length - deliveredCount;
+                        {isExpanded && (
+                            <div className={styles.grid}>
+                                {regionDrivers.map((driver) => {
+                                    const assignments = driver.recentAssignments || [];
+                                    const deliveredCount = assignments.filter(a => a.status === 'Delivered').length;
+                                    const openCount = assignments.length - deliveredCount;
 
-                                return (
-                                    <div key={driver.id} className={styles.card}>
-                                        <div className={styles.cardHeader}>
-                                            <div className={styles.avatar}>{driver.name.charAt(0)}</div>
-                                            <div style={{ flex: 1 }}>
-                                                <h3 className={styles.name}>{driver.name}</h3>
-                                                <p className={styles.id}>{driver.id}</p>
-                                            </div>
-                                            <span className={`${styles.status} ${styles[driver.status.toLowerCase().replace(' ', '')]}`}>
-                                                {driver.status}
-                                            </span>
-                                        </div>
-                                        <div className={styles.details}>
-                                            <div className={styles.row}>
-                                                <span>Vehicle:</span>
-                                                <strong>{driver.vehicle}</strong>
-                                            </div>
-                                            <div className={styles.row}>
-                                                <span>Location:</span>
-                                                <strong>{driver.location || "N/A"}</strong>
-                                            </div>
-                                            {driver.experience && (
-                                                <div className={styles.row}>
-                                                    <span>Experience:</span>
-                                                    <strong>{driver.experience} Years</strong>
+                                    return (
+                                        <div key={driver.id} className={styles.card}>
+                                            <div className={styles.cardHeader}>
+                                                <div className={styles.avatar}>{driver.name.charAt(0)}</div>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 className={styles.name}>{driver.name}</h3>
+                                                    <p className={styles.id}>{driver.id}</p>
                                                 </div>
-                                            )}
-                                            <div className={styles.row}>
-                                                <span>Phone:</span>
-                                                <strong>{driver.phone}</strong>
+                                                <span className={`${styles.status} ${styles[driver.status.toLowerCase().replace(' ', '')]}`}>
+                                                    {driver.status}
+                                                </span>
                                             </div>
-                                            <div className={styles.row}>
-                                                <span>Alt. Phone:</span>
-                                                <strong>{driver.altPhone || "N/A"}</strong>
+                                            <div className={styles.details}>
+                                                <div className={styles.row}>
+                                                    <span>Vehicle:</span>
+                                                    <strong>{driver.vehicle}</strong>
+                                                </div>
+                                                <div className={styles.row}>
+                                                    <span>Location:</span>
+                                                    <strong>{driver.location || "N/A"}</strong>
+                                                </div>
+                                                {driver.experience && (
+                                                    <div className={styles.row}>
+                                                        <span>Experience:</span>
+                                                        <strong>{driver.experience} Years</strong>
+                                                    </div>
+                                                )}
+                                                <div className={styles.row}>
+                                                    <span>Phone:</span>
+                                                    <strong>{driver.phone}</strong>
+                                                </div>
+                                                <div className={styles.row}>
+                                                    <span>Alt. Phone:</span>
+                                                    <strong>{driver.altPhone || "N/A"}</strong>
+                                                </div>
+                                                <div className={styles.row}>
+                                                    <span>Total Shipments:</span>
+                                                    <strong>{assignments.length}</strong>
+                                                </div>
+                                                <div className={styles.row}>
+                                                    <span>Open Shipments:</span>
+                                                    <strong style={{ color: 'var(--color-primary)' }}>{openCount}</strong>
+                                                </div>
+                                                <div className={styles.row}>
+                                                    <span>Delivered:</span>
+                                                    <strong style={{ color: 'var(--color-success)' }}>{deliveredCount}</strong>
+                                                </div>
                                             </div>
-                                            <div className={styles.row}>
-                                                <span>Total Shipments:</span>
-                                                <strong>{assignments.length}</strong>
-                                            </div>
-                                            <div className={styles.row}>
-                                                <span>Open Shipments:</span>
-                                                <strong style={{ color: 'var(--color-primary)' }}>{openCount}</strong>
-                                            </div>
-                                            <div className={styles.row}>
-                                                <span>Delivered:</span>
-                                                <strong style={{ color: 'var(--color-success)' }}>{deliveredCount}</strong>
+                                            <div className={styles.actions}>
+                                                <Link href={`/dashboard/drivers/${driver.id}`} className={styles.actionBtn}>
+                                                    View Summary
+                                                </Link>
+
+                                                <button className={styles.actionBtn} onClick={() => handleAssignClick(driver)}>
+                                                    Assign
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('Are you sure you want to remove this driver?')) {
+                                                            removeDriver(driver.id);
+                                                        }
+                                                    }}
+                                                    className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                                                    style={{
+                                                        backgroundColor: '#fee2e2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fecaca',
+                                                        flex: '0 0 auto',
+                                                        padding: 'var(--spacing-sm)'
+                                                    }}
+                                                    title="Delete Driver"
+                                                >
+                                                    🗑️
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className={styles.actions}>
-                                            <Link href={`/dashboard/drivers/${driver.id}`} className={styles.actionBtn}>
-                                                View Summary
-                                            </Link>
-
-                                            <button className={styles.actionBtn} onClick={() => handleAssignClick(driver)}>
-                                                Assign
-                                            </button>
-
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('Are you sure you want to remove this driver?')) {
-                                                        removeDriver(driver.id);
-                                                    }
-                                                }}
-                                                className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                                                style={{
-                                                    backgroundColor: '#fee2e2',
-                                                    color: '#dc2626',
-                                                    border: '1px solid #fecaca',
-                                                    flex: '0 0 auto',
-                                                    padding: 'var(--spacing-sm)'
-                                                }}
-                                                title="Delete Driver"
-                                            >
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 );
             })}
