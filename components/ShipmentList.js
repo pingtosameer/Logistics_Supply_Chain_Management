@@ -1,21 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import ShipmentTable from "./ShipmentTable";
 import AssignDriverModal from "./AssignDriverModal";
 import { useDriver } from "@/components/DriverContext";
 import styles from "@/app/dashboard/shipments/page.module.css";
 
-export default function ShipmentList({ initialShipments }) {
+function ShipmentListContent({ initialShipments }) {
+    const searchParams = useSearchParams();
+    const statusQuery = searchParams.get('status');
     const { drivers } = useDriver();
-    const [filter, setFilter] = useState("all");
+    const [filter, setFilter] = useState(statusQuery || "all");
     const [assignmentFilter, setAssignmentFilter] = useState("all");
     const [search, setSearch] = useState("");
     const [selectedShipmentForAssign, setSelectedShipmentForAssign] = useState(null);
     const [currentDriverForReassign, setCurrentDriverForReassign] = useState(null);
 
+    useEffect(() => {
+        if (statusQuery) {
+            setFilter(statusQuery);
+        }
+    }, [statusQuery]);
+
     const filteredShipments = initialShipments.filter(s => {
-        const matchesStatus = filter === "all" || s.status === filter;
+        let matchesStatus = false;
+        if (filter === "all") matchesStatus = true;
+        else if (filter === "ActionRequired") {
+            matchesStatus = s.status === 'Shipment Created & Pick Up Pending' || s.status === 'Delayed';
+        } else if (filter === "Exceptions") {
+            matchesStatus = s.status === 'Misrouted' || s.status === 'Returned';
+        } else {
+            matchesStatus = s.status === filter;
+        }
+
         const matchesSearch = s.id.toLowerCase().includes(search.toLowerCase()) ||
             s.recipient.toLowerCase().includes(search.toLowerCase());
 
@@ -54,6 +72,8 @@ export default function ShipmentList({ initialShipments }) {
                     onChange={(e) => setFilter(e.target.value)}
                 >
                     <option value="all">All Statuses</option>
+                    <option value="ActionRequired">Action Required (Pending/Delayed)</option>
+                    <option value="Exceptions">Exceptions (Misrouted/Returned)</option>
                     <option value="Shipment Created & Pick Up Pending">Shipment Created & Pick Up Pending</option>
                     <option value="Pickup Done">Pickup Done</option>
                     <option value="In Transit">In Transit</option>
@@ -89,5 +109,13 @@ export default function ShipmentList({ initialShipments }) {
                 />
             )}
         </div>
+    );
+}
+
+export default function ShipmentList({ initialShipments }) {
+    return (
+        <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading shipments...</div>}>
+            <ShipmentListContent initialShipments={initialShipments} />
+        </Suspense>
     );
 }

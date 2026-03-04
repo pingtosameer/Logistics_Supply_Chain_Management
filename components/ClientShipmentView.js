@@ -40,6 +40,70 @@ export default function ClientShipmentView({ id, initialShipment }) {
     // CHECK: imports at top need to change too.
 
     useEffect(() => {
+        // Mock pickups array to resolve "Shipment Not Found" for assigned PU-XXXXX IDs
+        const mockPickups = [
+            {
+                id: "PU-10023",
+                sender: "TechCorp Suppliers",
+                origin: "123 Industrial Pkwy, Mumbai",
+                recipient: "Main Hub",
+                destination: "Mumbai Sorting Center",
+                courier: "LogiTrack Fleet",
+                estimatedDelivery: "Oct 24, 2024",
+                events: [{ date: new Date().toISOString(), status: "Shipment Created & Pick Up Pending", location: "Mumbai", description: "Pickup requested by vendor" }],
+                status: "Shipment Created & Pick Up Pending",
+                currentLocation: "123 Industrial Pkwy, Mumbai"
+            },
+            {
+                id: "PU-10024",
+                sender: "Global Imports Ltd",
+                origin: "Warehouse 4A, Delhi",
+                recipient: "Main Hub",
+                destination: "Delhi Sorting Center",
+                courier: "LogiTrack Fleet",
+                estimatedDelivery: "Oct 25, 2024",
+                events: [{ date: new Date().toISOString(), status: "Shipment Created & Pick Up Pending", location: "Delhi", description: "Pickup requested by vendor" }],
+                status: "Shipment Created & Pick Up Pending",
+                currentLocation: "Warehouse 4A, Delhi"
+            },
+            {
+                id: "PU-10025",
+                sender: "FastFashion Apparel",
+                origin: "Sector 14, Gurugram",
+                recipient: "Main Hub",
+                destination: "Gurugram Sorting Center",
+                courier: "LogiTrack Fleet",
+                estimatedDelivery: "Oct 24, 2024",
+                events: [{ date: new Date().toISOString(), status: "Shipment Created & Pick Up Pending", location: "Gurugram", description: "Pickup requested by vendor" }],
+                status: "Shipment Created & Pick Up Pending",
+                currentLocation: "Sector 14, Gurugram"
+            },
+            {
+                id: "PU-10026",
+                sender: "ElecTronics City",
+                origin: "IT Park Block C, Bangalore",
+                recipient: "Main Hub",
+                destination: "Bangalore Sorting Center",
+                courier: "LogiTrack Fleet",
+                estimatedDelivery: "Oct 24, 2024",
+                events: [{ date: new Date().toISOString(), status: "Shipment Created & Pick Up Pending", location: "Bangalore", description: "Pickup requested by vendor" }],
+                status: "Shipment Created & Pick Up Pending",
+                currentLocation: "IT Park Block C, Bangalore"
+            },
+            {
+                id: "PU-10027",
+                sender: "Books & More Dist.",
+                origin: "Central Market, Pune",
+                recipient: "Main Hub",
+                destination: "Pune Sorting Center",
+                courier: "LogiTrack Fleet",
+                estimatedDelivery: "Oct 25, 2024",
+                events: [{ date: new Date().toISOString(), status: "Shipment Created & Pick Up Pending", location: "Pune", description: "Pickup requested by vendor" }],
+                status: "Shipment Created & Pick Up Pending",
+                currentLocation: "Central Market, Pune"
+            }
+        ];
+
         const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
         const found = localShipments.find(s => s.id === id);
         if (found) {
@@ -49,7 +113,14 @@ export default function ClientShipmentView({ id, initialShipment }) {
             setShipment(initialShipment);
             setPodUploaded(!!initialShipment.podUploaded);
         } else {
-            setShipment(null);
+            // Fallback for mock PU- assignments
+            const foundMock = mockPickups.find(p => p.id === id);
+            if (foundMock) {
+                setShipment(foundMock);
+                setPodUploaded(false);
+            } else {
+                setShipment(null);
+            }
         }
         setLoading(false);
     }, [id, initialShipment]);
