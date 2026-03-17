@@ -109,6 +109,10 @@
     color: var(--color-surface);
 }
 
+.link:hover .icon {
+    color: var(--color-secondary);
+}
+
 .active {
     background-color: var(--color-primary-light);
     color: var(--color-secondary);
@@ -156,4 +160,69 @@
 .userRole {
     font-size: 0.75rem;
     color: var(--color-text-muted);
+}
+
+.homeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+    border: 1px solid var(--color-border);
+}
+
+.homeBtn:hover {
+    background-color: var(--color-border);
+    transform: translateY(-1px);
+}
+
+/* --- Dark Mode Overrides --- */
+
+:global([data-theme="dark"]) .sidebar {
+    background-color: var(--color-background);
+    border-right-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .logo {
+    border-bottom-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .logoIcon {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverted);
+}
+
+:global([data-theme="dark"]) .link:hover {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+}
+
+:global([data-theme="dark"]) .link:hover .icon {
+    color: var(--color-primary);
+}
+
+:global([data-theme="dark"]) .active {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverted);
+}
+
+:global([data-theme="dark"]) .footer {
+    border-top-color: var(--color-border);
+}
+
+:global([data-theme="dark"]) .avatar {
+    background-color: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+}
+
+:global([data-theme="dark"]) .userName {
+    color: var(--color-text);
 }

@@ -19,9 +19,8 @@ export default function PodsPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>Uploaded PODs</h1>
-                <p style={{ color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+            <div className={styles.header} style={{ marginBottom: '1.5rem' }}>
+                <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
                     View and download Proof of Delivery documents.
                 </p>
             </div>

@@ -88,12 +88,7 @@ export default function ShipmentsPage() {
 
     return (
         <div>
-            <div className={styles.header}>
-                <h1 className={styles.title}>Shipment Management</h1>
-                <button className={styles.addButton} onClick={handleNewShipment}>+ New Shipment</button>
-            </div>
-
-            <ShipmentList initialShipments={shipments} />
+            <ShipmentList initialShipments={shipments} onNewShipment={handleNewShipment} />
 
             {isModalOpen && (
                 <div className={styles.modalOverlay}>

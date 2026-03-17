@@ -170,9 +170,8 @@ export default function PickupsPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>Open Pickups</h1>
-                <p style={{ color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+            <div className={styles.header} style={{ marginBottom: '1.5rem' }}>
+                <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
                     Active vendor pickup requests waiting for assignment.
                 </p>
             </div>

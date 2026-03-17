@@ -50,7 +50,11 @@ export default function Sidebar() {
                 </nav>
 
                 <div className={styles.footer}>
-                    <div className={styles.user}>
+                    <Link href="/" className={styles.homeBtn}>
+                        <span className={styles.icon}>🏠</span>
+                        Track Shipment
+                    </Link>
+                    <div className={styles.user} style={{ marginTop: '1rem' }}>
                         <div className={styles.avatar}>JD</div>
                         <div className={styles.userInfo}>
                             <p className={styles.userName}>John Doe</p>

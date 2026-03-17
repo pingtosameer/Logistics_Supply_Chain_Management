@@ -23,9 +23,7 @@ export default function SettingsPage() {
 
     return (
         <div className={styles.container}>
-            <h1 className={styles.title}>System Settings</h1>
-
-            <div className={styles.section}>
+            <div className={styles.section} style={{ marginTop: '1rem' }}>
                 <h2 className={styles.sectionTitle}>General Preferences</h2>
                 <div className={styles.settingRow}>
                     <div className={styles.settingInfo}>

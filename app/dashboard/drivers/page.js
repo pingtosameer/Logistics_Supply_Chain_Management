@@ -13,6 +13,7 @@ export default function DriversPage() {
     const [shipmentIdInput, setShipmentIdInput] = useState('');
     const [assignError, setAssignError] = useState('');
     const [expandedRegions, setExpandedRegions] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
 
     const toggleRegion = (regionName) => {
         setExpandedRegions(prev => ({
@@ -102,14 +103,37 @@ export default function DriversPage() {
         }
     };
 
+    // Filter drivers based on search query
+    const filteredDrivers = drivers.filter(d =>
+        d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (d.vehicle && d.vehicle.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>Driver Fleet</h1>
-                <Link href="/dashboard/drivers/add" className={styles.addButton}>+ Add Driver</Link>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                <input
+                    type="text"
+                    placeholder="Search drivers by name, ID, or vehicle..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        padding: '0.6rem 1rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        flex: 1,
+                        maxWidth: '400px'
+                    }}
+                />
+                <Link href="/dashboard/drivers/add" className={styles.addButton} style={{ marginLeft: 'auto' }}>
+                    + Add Driver
+                </Link>
             </div>
 
-            {Object.entries(drivers.reduce((acc, driver) => {
+            {Object.entries(filteredDrivers.reduce((acc, driver) => {
                 const region = driver.region || "Other";
                 if (!acc[region]) acc[region] = [];
                 acc[region].push(driver);

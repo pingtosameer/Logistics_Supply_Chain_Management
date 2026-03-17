@@ -7,7 +7,7 @@ import AssignDriverModal from "./AssignDriverModal";
 import { useDriver } from "@/components/DriverContext";
 import styles from "@/app/dashboard/shipments/page.module.css";
 
-function ShipmentListContent({ initialShipments }) {
+function ShipmentListContent({ initialShipments, onNewShipment }) {
     const searchParams = useSearchParams();
     const statusQuery = searchParams.get('status');
     const { drivers } = useDriver();
@@ -82,6 +82,18 @@ function ShipmentListContent({ initialShipments }) {
                     <option value="Delivered">Delivered</option>
                     <option value="Returned">Returned</option>
                 </select>
+                {onNewShipment && (
+                    <button
+                        className={styles.addButton}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onNewShipment();
+                        }}
+                        style={{ minWidth: '160px' }}
+                    >
+                        + New Shipment
+                    </button>
+                )}
             </div>
             {filteredShipments.length > 0 ? (
                 <ShipmentTable
@@ -112,10 +124,10 @@ function ShipmentListContent({ initialShipments }) {
     );
 }
 
-export default function ShipmentList({ initialShipments }) {
+export default function ShipmentList({ initialShipments, onNewShipment }) {
     return (
         <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading shipments...</div>}>
-            <ShipmentListContent initialShipments={initialShipments} />
+            <ShipmentListContent initialShipments={initialShipments} onNewShipment={onNewShipment} />
         </Suspense>
     );
 }

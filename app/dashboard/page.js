@@ -17,12 +17,12 @@ export default function DashboardPage() {
         actionRequired: 0,
         openPickups: 0
     });
-    
+
     // Chart Filters State
     const [chartRegion, setChartRegion] = useState("All");
     const [chartStatus, setChartStatus] = useState("All");
     const [availableRegions, setAvailableRegions] = useState([]);
-    
+
     const [allShipmentsRaw, setAllShipmentsRaw] = useState([]);
     const [chartData1, setChartData1] = useState([]);
     const [chartData2, setChartData2] = useState([]);
@@ -32,11 +32,11 @@ export default function DashboardPage() {
         const loadInitialData = async () => {
             const serverShipments = await getAllShipments();
             const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-            
+
             // Deduplicate: local overrides server
             const localIds = new Set(localShipments.map(s => s.id));
             const filteredServer = serverShipments.filter(s => !localIds.has(s.id));
-            
+
             const allShipments = [...localShipments, ...filteredServer];
 
             // Extract unique regions properly by taking the state/city from origin
@@ -81,10 +81,10 @@ export default function DashboardPage() {
                 actionRequired: actionRequiredCount,
                 openPickups: activeOpenPickups
             });
-            
+
             setLoading(false);
         };
-        
+
         loadInitialData();
     }, []);
 
@@ -100,19 +100,19 @@ export default function DashboardPage() {
                 const region = parts[parts.length - 1].trim();
                 matchesRegion = region === chartRegion;
             }
-            
+
             let matchesStatus = true;
             if (chartStatus !== "All") {
                 matchesStatus = s.status === chartStatus;
             }
-            
+
             return matchesRegion && matchesStatus;
         });
 
         const today = new Date();
         const volumeMap = {};
         const valueMap = {};
-        
+
         // Initialize last 7 days
         for (let i = 6; i >= 0; i--) {
             const d = new Date(today);
@@ -124,14 +124,14 @@ export default function DashboardPage() {
 
         filteredShipments.forEach(shipment => {
             // Generate deterministic value
-            const pseudoValue = (shipment.id.charCodeAt(shipment.id.length - 1) * 150) + 500; 
-            
+            const pseudoValue = (shipment.id.charCodeAt(shipment.id.length - 1) * 150) + 500;
+
             if (shipment.events) {
                 shipment.events.forEach(event => {
                     const eventDate = new Date(event.date || event.timestamp);
                     const diffTime = Math.abs(today - eventDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
                     if (diffDays <= 7) {
                         const dateKey = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
                         if (volumeMap[dateKey]) {
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             Volume: volumeMap[key].volume,
             Value: volumeMap[key].value
         }));
-        
+
         const cData2 = Object.keys(valueMap).map(key => ({
             name: key,
             Delivered: valueMap[key].delivered,
@@ -176,7 +176,6 @@ export default function DashboardPage() {
 
     return (
         <div>
-            <h1 className={styles.pageTitle}>Dashboard Overview</h1>
             <div className={styles.grid}>
                 <Link href="/dashboard/shipments" style={{ textDecoration: 'none' }}>
                     <StatsCard
@@ -236,16 +235,16 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <h2 className={styles.sectionTitle} style={{ margin: 0 }}>Analytics Dashboards</h2>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <select 
-                            value={chartRegion} 
+                        <select
+                            value={chartRegion}
                             onChange={e => setChartRegion(e.target.value)}
                             style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}
                         >
                             <option value="All">All Regions (Origin)</option>
                             {availableRegions.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
-                        <select 
-                            value={chartStatus} 
+                        <select
+                            value={chartStatus}
                             onChange={e => setChartStatus(e.target.value)}
                             style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}
                         >
@@ -257,7 +256,7 @@ export default function DashboardPage() {
                         </select>
                     </div>
                 </div>
-                
+
                 {/* 1 Row 1 Graph layout */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <RecentActivityChart data1={chartData1} data2={chartData2} />
