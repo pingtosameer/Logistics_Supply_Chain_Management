@@ -3,18 +3,24 @@
 import styles from "./page.module.css";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ref, onValue } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function PodsPage() {
     const [pods, setPods] = useState([]);
     const [selectedPod, setSelectedPod] = useState(null);
 
     useEffect(() => {
-        // Fetch PODs and filter out any invalid entries
-        const fetchPods = () => {
-            const localPods = JSON.parse(localStorage.getItem('local_pods') || '[]');
-            setPods(localPods);
-        };
-        fetchPods();
+        const podsRef = ref(database, 'pods');
+        const unsubscribe = onValue(podsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                setPods(Array.isArray(data) ? data.filter(Boolean) : Object.values(data));
+            } else {
+                setPods([]);
+            }
+        });
+        return () => unsubscribe();
     }, []);
 
     return (

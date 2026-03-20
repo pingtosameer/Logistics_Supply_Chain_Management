@@ -5,6 +5,8 @@ import styles from "./page.module.css";
 import Link from "next/link";
 import { useDriver } from "@/components/DriverContext";
 import { getAllShipments } from "@/lib/data";
+import { ref, get } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function DriversPage() {
     const { drivers, removeDriver, assignShipmentToDriver } = useDriver();
@@ -49,8 +51,14 @@ export default function DriversPage() {
             let shipmentData = null;
             let shipmentStatus = null;
 
-            // Check local overrides first
-            const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
+            // Check Firebase first
+            const shipmentsRef = ref(database, 'shipments');
+            const snapshot = await get(shipmentsRef);
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            }
             const localMatch = localShipments.find(s => s.id === trimmedInput);
 
             if (localMatch) {

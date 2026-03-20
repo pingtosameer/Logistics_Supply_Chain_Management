@@ -4,22 +4,34 @@ import { useEffect, useState } from "react";
 import styles from "@/app/tracking/[id]/page.module.css";
 import Link from "next/link";
 import Timeline from "@/components/Timeline";
+import { ref, onValue } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function ClientTrackingView({ id, initialShipment, returnTo }) {
     const [shipment, setShipment] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        const found = localShipments.find(s => s.id === id);
-        if (found) {
-            setShipment(found);
-        } else if (initialShipment) {
-            setShipment(initialShipment);
-        } else {
-            setShipment(null);
-        }
-        setLoading(false);
+        const shipmentsRef = ref(database, 'shipments');
+        const unsubscribe = onValue(shipmentsRef, (snapshot) => {
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            }
+            const found = localShipments.find(s => s.id === id);
+
+            if (found) {
+                setShipment(found);
+            } else if (initialShipment) {
+                setShipment(initialShipment);
+            } else {
+                setShipment(null);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [id, initialShipment]);
 
     if (loading) {

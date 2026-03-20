@@ -6,6 +6,8 @@ import styles from "@/app/dashboard/shipments/[id]/page.module.css";
 import Timeline from "@/components/Timeline";
 import ShipmentActions from "@/components/ShipmentActions";
 import { useDriver } from "@/components/DriverContext";
+import { ref, get, set, onValue } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function ClientShipmentView({ id, initialShipment }) {
     const { updateDriverShipmentStatus } = useDriver();
@@ -104,25 +106,34 @@ export default function ClientShipmentView({ id, initialShipment }) {
             }
         ];
 
-        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        const found = localShipments.find(s => s.id === id);
-        if (found) {
-            setShipment(found);
-            setPodUploaded(!!found.podUploaded);
-        } else if (initialShipment) {
-            setShipment(initialShipment);
-            setPodUploaded(!!initialShipment.podUploaded);
-        } else {
-            // Fallback for mock PU- assignments
-            const foundMock = mockPickups.find(p => p.id === id);
-            if (foundMock) {
-                setShipment(foundMock);
-                setPodUploaded(false);
-            } else {
-                setShipment(null);
+        const shipmentsRef = ref(database, 'shipments');
+        const unsubscribe = onValue(shipmentsRef, (snapshot) => {
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
             }
-        }
-        setLoading(false);
+
+            const found = localShipments.find(s => s.id === id);
+            if (found) {
+                setShipment(found);
+                setPodUploaded(!!found.podUploaded);
+            } else if (initialShipment) {
+                setShipment(initialShipment);
+                setPodUploaded(!!initialShipment.podUploaded);
+            } else {
+                const foundMock = mockPickups.find(p => p.id === id);
+                if (foundMock) {
+                    setShipment(foundMock);
+                    setPodUploaded(false);
+                } else {
+                    setShipment(null);
+                }
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [id, initialShipment]);
 
     const getStatusColor = (status) => {
@@ -180,17 +191,24 @@ export default function ClientShipmentView({ id, initialShipment }) {
         // Update local state
         setShipment(updatedShipment);
 
-        // Update localStorage overrides
-        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        const existingIndex = localShipments.findIndex(s => s.id === id);
-        let updatedList;
-        if (existingIndex >= 0) {
-            updatedList = [...localShipments];
-            updatedList[existingIndex] = updatedShipment;
-        } else {
-            updatedList = [updatedShipment, ...localShipments];
-        }
-        localStorage.setItem('local_shipments', JSON.stringify(updatedList));
+        // Update Firebase overrides
+        const shipmentsRef = ref(database, 'shipments');
+        get(shipmentsRef).then(snapshot => {
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            }
+            const existingIndex = localShipments.findIndex(s => s.id === id);
+            let updatedList;
+            if (existingIndex >= 0) {
+                updatedList = [...localShipments];
+                updatedList[existingIndex] = updatedShipment;
+            } else {
+                updatedList = [updatedShipment, ...localShipments];
+            }
+            set(shipmentsRef, updatedList);
+        });
 
         setIsEditModalOpen(false);
     };
@@ -221,17 +239,24 @@ export default function ClientShipmentView({ id, initialShipment }) {
 
         setShipment(updatedShipment);
 
-        // Update localStorage overrides
-        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        const existingIndex = localShipments.findIndex(s => s.id === id);
-        let updatedList;
-        if (existingIndex >= 0) {
-            updatedList = [...localShipments];
-            updatedList[existingIndex] = updatedShipment;
-        } else {
-            updatedList = [updatedShipment, ...localShipments];
-        }
-        localStorage.setItem('local_shipments', JSON.stringify(updatedList));
+        // Update Firebase overrides
+        const shipmentsRef = ref(database, 'shipments');
+        get(shipmentsRef).then(snapshot => {
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            }
+            const existingIndex = localShipments.findIndex(s => s.id === id);
+            let updatedList;
+            if (existingIndex >= 0) {
+                updatedList = [...localShipments];
+                updatedList[existingIndex] = updatedShipment;
+            } else {
+                updatedList = [updatedShipment, ...localShipments];
+            }
+            set(shipmentsRef, updatedList);
+        });
 
         // Sync globally with driver context
         if (updateDriverShipmentStatus) {
@@ -387,23 +412,36 @@ export default function ClientShipmentView({ id, initialShipment }) {
                                                 alert("Please select a file first.");
                                                 return;
                                             }
-                                            // Save to local_pods 
-                                            const existingPods = JSON.parse(localStorage.getItem('local_pods') || '[]');
-                                            const newPod = {
-                                                shipmentId: id,
-                                                date: new Date().toISOString(),
-                                                fileData: podFileBase64,
-                                                fileName: podFileName
-                                            };
-                                            localStorage.setItem('local_pods', JSON.stringify([newPod, ...existingPods]));
-
-                                            // Mark podUploaded in local_shipments
-                                            const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-                                            const updatedShipments = localShipments.map(s => {
-                                                if (s.id === id) return { ...s, podUploaded: true };
-                                                return s;
+                                            // Save to pods in Firebase
+                                            const podsRef = ref(database, 'pods');
+                                            get(podsRef).then(snapshot => {
+                                                let existingPods = [];
+                                                if (snapshot.exists()) {
+                                                    const data = snapshot.val();
+                                                    existingPods = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                                                }
+                                                const newPod = {
+                                                    shipmentId: id,
+                                                    date: new Date().toISOString(),
+                                                    fileData: podFileBase64,
+                                                    fileName: podFileName
+                                                };
+                                                set(podsRef, [newPod, ...existingPods]);
                                             });
-                                            localStorage.setItem('local_shipments', JSON.stringify(updatedShipments));
+
+                                            // Mark podUploaded in Firebase shipments
+                                            const shipmentsRef = ref(database, 'shipments');
+                                            get(shipmentsRef).then(snapshot => {
+                                                if (snapshot.exists()) {
+                                                    const data = snapshot.val();
+                                                    const localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                                                    const updatedShipments = localShipments.map(s => {
+                                                        if (s.id === id) return { ...s, podUploaded: true };
+                                                        return s;
+                                                    });
+                                                    set(shipmentsRef, updatedShipments);
+                                                }
+                                            });
 
                                             alert("POD Uploaded successfully!");
                                             setPodUploaded(true);

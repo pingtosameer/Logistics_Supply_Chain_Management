@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { ref, onValue, set } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 const DriverContext = createContext();
 
@@ -12,65 +14,64 @@ export function DriverProvider({ children }) {
         { id: "DRV-004", name: "Anita Desai", vehicle: "Scooter (Last Mile)", status: "Active", location: "Indiranagar, BLR", region: "Bangalore", phone: "+91 88990 01122" },
     ]);
 
-    // Load from localStorage on mount
+    // Listen to Firebase Realtime Database
     useEffect(() => {
-        const saved = localStorage.getItem('drivers');
-        if (saved) {
-            const parsed = JSON.parse(saved).map(d => {
-                // Migration: assign region if missing based on location
-                if (!d.region) {
-                    if (d.location.toLowerCase().includes("mumbai") || d.location.toLowerCase().includes("bhiwandi")) d.region = "Mumbai";
-                    else if (d.location.toLowerCase().includes("pune")) d.region = "Pune";
-                    else if (d.location.toLowerCase().includes("blr") || d.location.toLowerCase().includes("bangalore")) d.region = "Bangalore";
-                    else if (d.location.toLowerCase().includes("delhi")) d.region = "Delhi";
-                    else if (d.location.toLowerCase().includes("kolkata")) d.region = "Kolkata";
-                    else d.region = "Other";
-                }
-                return d;
-            });
-            setDrivers(parsed);
-        }
+        const driversRef = ref(database, 'drivers');
+        const unsubscribe = onValue(driversRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const parsed = Array.isArray(data) ? data : Object.values(data);
+
+                const withRegion = parsed.map(d => {
+                    // Migration: assign region if missing based on location
+                    if (!d.region && d.location) {
+                        if (d.location.toLowerCase().includes("mumbai") || d.location.toLowerCase().includes("bhiwandi")) d.region = "Mumbai";
+                        else if (d.location.toLowerCase().includes("pune")) d.region = "Pune";
+                        else if (d.location.toLowerCase().includes("blr") || d.location.toLowerCase().includes("bangalore")) d.region = "Bangalore";
+                        else if (d.location.toLowerCase().includes("delhi")) d.region = "Delhi";
+                        else if (d.location.toLowerCase().includes("kolkata")) d.region = "Kolkata";
+                        else d.region = "Other";
+                    }
+                    return d;
+                });
+
+                // Filter out null or undefined elements that firebase arrays sometimes have
+                setDrivers(withRegion.filter(d => d !== null && d !== undefined));
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    // Save to localStorage whenever drivers change
-    useEffect(() => {
-        if (drivers.length > 0) { // Optional: Prevent overwriting with empty if not intended, though here we want to sync. 
-            // Actually, simply saving is fine, but we need to be careful not to save the INITIAL default over the potentially loaded one 
-            // before the load happens. 
-            // However, since the load happens in a separate useEffect on mount, and this one runs on 'drivers' change...
-            // the initial render triggers this effect with the default drivers.
-            // This would overwrite localStorage with defaults on every reload!
-
-            // To fix this properly: 
-            // 1. We need a 'loaded' flag or
-            // 2. We can combine the logic.
-
-            // Let's use a simpler approach for this fix:
-            // The issue with the previous code was the hydration mismatch.
-            // If we want to persist, we should only save AFTER we have loaded (or confirmed no load needed).
-
-            localStorage.setItem('drivers', JSON.stringify(drivers));
-        }
-    }, [drivers]);
+    // Helper to push updates to Firebase
+    const updateFirebase = (newDriversList) => {
+        const driversRef = ref(database, 'drivers');
+        set(driversRef, newDriversList).catch(err => {
+            console.error("Failed to update drivers in Firebase:", err);
+        });
+    };
 
     const addDriver = (newDriver) => {
-        // Generate a unique ID using timestamp and random number to prevent collisions
         const uniqueId = newDriver.id || `DRV-${Date.now().toString().slice(-6)}`;
-
         const driverWithId = {
             ...newDriver,
             id: uniqueId,
-            recentAssignments: [] // Initialize with empty assignments
+            recentAssignments: []
         };
-        setDrivers((prevDrivers) => [...prevDrivers, driverWithId]);
+        const newDriversList = [...drivers, driverWithId];
+        updateFirebase(newDriversList);
+        // Optimistic update
+        setDrivers(newDriversList);
     };
 
     const removeDriver = (id) => {
-        setDrivers((prevDrivers) => prevDrivers.filter(driver => driver.id !== id));
+        const newDriversList = drivers.filter(driver => driver.id !== id);
+        updateFirebase(newDriversList);
+        setDrivers(newDriversList);
     };
 
     const assignShipmentToDriver = (driverId, shipmentId, shipmentStatus) => {
-        setDrivers(prevDrivers => prevDrivers.map(d => {
+        const newDriversList = drivers.map(d => {
             if (d.id === driverId) {
                 const newAssignment = {
                     id: shipmentId,
@@ -83,11 +84,13 @@ export function DriverProvider({ children }) {
             // Remove the shipment from any other driver
             const filteredOther = (d.recentAssignments || []).filter(a => a.id !== shipmentId);
             return { ...d, recentAssignments: filteredOther };
-        }));
+        });
+        updateFirebase(newDriversList);
+        setDrivers(newDriversList);
     };
 
     const updateDriverShipmentStatus = (shipmentId, newStatus) => {
-        setDrivers(prevDrivers => prevDrivers.map(d => {
+        const newDriversList = drivers.map(d => {
             if (!d.recentAssignments) return d;
 
             let updated = false;
@@ -100,7 +103,9 @@ export function DriverProvider({ children }) {
             });
 
             return updated ? { ...d, recentAssignments: newAssignments } : d;
-        }));
+        });
+        updateFirebase(newDriversList);
+        setDrivers(newDriversList);
     };
 
     return (

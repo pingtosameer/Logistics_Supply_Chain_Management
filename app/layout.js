@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DriverProvider } from "@/components/DriverContext";
+import MigrationRunner from "@/components/MigrationRunner";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
         <html lang="en">
             <body className={`${geistSans.variable} ${geistMono.variable}`}>
                 <DriverProvider>
+                    <MigrationRunner />
                     {children}
                 </DriverProvider>
             </body>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getAllShipments } from "@/lib/data";
+import { ref, get } from "firebase/database";
+import { database } from "@/lib/firebase";
 import StatsCard from "@/components/StatsCard";
 import RecentActivityChart from "@/components/RecentActivityChart";
 import styles from "./page.module.css";
@@ -31,7 +33,14 @@ export default function DashboardPage() {
     useEffect(() => {
         const loadInitialData = async () => {
             const serverShipments = await getAllShipments();
-            const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
+
+            const shipmentsRef = ref(database, 'shipments');
+            const snapshot = await get(shipmentsRef);
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            }
 
             // Deduplicate: local overrides server
             const localIds = new Set(localShipments.map(s => s.id));

@@ -7,6 +7,8 @@ import { useDriver } from "@/components/DriverContext";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAllShipments } from "@/lib/data";
+import { ref, get } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function DriverProfile() {
     const params = useParams();
@@ -21,7 +23,13 @@ export default function DriverProfile() {
                 const foundDriver = drivers.find(d => d.id === params.id);
                 if (foundDriver) {
                     try {
-                        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
+                        const shipmentsRef = ref(database, 'shipments');
+                        const snapshot = await get(shipmentsRef);
+                        let localShipments = [];
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                        }
                         const dbShipments = await getAllShipments();
 
                         const updatedAssignments = foundDriver.recentAssignments?.map(assignment => {

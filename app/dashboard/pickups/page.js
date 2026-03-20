@@ -4,6 +4,8 @@ import styles from "./page.module.css";
 import { useState, useEffect } from "react";
 import AssignDriverModal from "@/components/AssignDriverModal";
 import { useDriver } from "@/components/DriverContext";
+import { ref, get, set, onValue } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function PickupsPage() {
     const { drivers, assignShipmentToDriver } = useDriver();
@@ -62,48 +64,55 @@ export default function PickupsPage() {
 
     useEffect(() => {
         const fetchLocalPickups = () => {
-            const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
+            const shipmentsRef = ref(database, 'shipments');
+            onValue(shipmentsRef, (snapshot) => {
+                let localShipments = [];
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                }
 
-            // Filter local shipments that are pending and NOT already assigned to a driver
-            const unassignedLocalShipments = localShipments.filter(s => {
-                if (s.status !== "Shipment Created & Pick Up Pending") return false;
+                // Filter local shipments that are pending and NOT already assigned to a driver
+                const unassignedLocalShipments = localShipments.filter(s => {
+                    if (s.status !== "Shipment Created & Pick Up Pending") return false;
 
-                // Check if this shipment ID is already in any driver's recentAssignments
-                const isAssigned = drivers.some(d =>
-                    (d.recentAssignments || []).some(a => a.id === s.id)
-                );
+                    // Check if this shipment ID is already in any driver's recentAssignments
+                    const isAssigned = drivers.some(d =>
+                        (d.recentAssignments || []).some(a => a.id === s.id)
+                    );
 
-                return !isAssigned;
+                    return !isAssigned;
+                });
+
+                const localPickups = unassignedLocalShipments.map(s => {
+                    // Parse a mock date/time from the event date or just use a default
+                    const eventDate = s.events && s.events.length > 0 ? new Date(s.events[0].date) : new Date();
+
+                    return {
+                        id: s.id,
+                        vendorName: s.sender,
+                        location: s.origin, // e.g. "Mumbai"
+                        requestDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                        requestTime: "ASAP",
+                        items: 1, // Defaulting to 1 for locally tracked mock logic
+                        status: s.status,
+                        isLocalShipment: true // Flag to identify shipments from localStorage
+                    };
+                });
+
+                // Filter initialPickups to also remove ones that might have been assigned
+                const unassignedInitialPickups = initialPickups.filter(p => {
+                    const isAssigned = drivers.some(d =>
+                        (d.recentAssignments || []).some(a => a.id === p.id)
+                    );
+                    return !isAssigned;
+                });
+
+                // Merge unique entries (local takes precedence if ID collision exists)
+                const pickupMap = new Map();
+                [...unassignedInitialPickups, ...localPickups].forEach(p => pickupMap.set(p.id, p));
+                setPickups(Array.from(pickupMap.values()));
             });
-
-            const localPickups = unassignedLocalShipments.map(s => {
-                // Parse a mock date/time from the event date or just use a default
-                const eventDate = s.events && s.events.length > 0 ? new Date(s.events[0].date) : new Date();
-
-                return {
-                    id: s.id,
-                    vendorName: s.sender,
-                    location: s.origin, // e.g. "Mumbai"
-                    requestDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                    requestTime: "ASAP",
-                    items: 1, // Defaulting to 1 for locally tracked mock logic
-                    status: s.status,
-                    isLocalShipment: true // Flag to identify shipments from localStorage
-                };
-            });
-
-            // Filter initialPickups to also remove ones that might have been assigned
-            const unassignedInitialPickups = initialPickups.filter(p => {
-                const isAssigned = drivers.some(d =>
-                    (d.recentAssignments || []).some(a => a.id === p.id)
-                );
-                return !isAssigned;
-            });
-
-            // Merge unique entries (local takes precedence if ID collision exists)
-            const pickupMap = new Map();
-            [...unassignedInitialPickups, ...localPickups].forEach(p => pickupMap.set(p.id, p));
-            setPickups(Array.from(pickupMap.values()));
         };
 
         fetchLocalPickups();
@@ -132,28 +141,35 @@ export default function PickupsPage() {
             );
 
             if (isAssigned) {
-                // Update local storage status
+                // Update Firebase status
                 if (selectedPickup.original.isLocalShipment) {
-                    const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-                    const updatedShipments = localShipments.map(s => {
-                        if (s.id === selectedPickup.original.id) {
-                            return {
-                                ...s,
-                                status: "Pickup Done", // Update status
-                                events: [
-                                    {
-                                        date: new Date().toISOString(),
-                                        status: "Pickup Done",
-                                        location: s.origin,
-                                        description: "Driver assigned for pickup"
-                                    },
-                                    ...(s.events || [])
-                                ]
-                            };
+                    const shipmentsRef = ref(database, 'shipments');
+                    get(shipmentsRef).then(snapshot => {
+                        let localShipments = [];
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
                         }
-                        return s;
+                        const updatedShipments = localShipments.map(s => {
+                            if (s.id === selectedPickup.original.id) {
+                                return {
+                                    ...s,
+                                    status: "Pickup Done", // Update status
+                                    events: [
+                                        {
+                                            date: new Date().toISOString(),
+                                            status: "Pickup Done",
+                                            location: s.origin,
+                                            description: "Driver assigned for pickup"
+                                        },
+                                        ...(s.events || [])
+                                    ]
+                                };
+                            }
+                            return s;
+                        });
+                        set(shipmentsRef, updatedShipments);
                     });
-                    localStorage.setItem('local_shipments', JSON.stringify(updatedShipments));
                 }
 
                 // Remove from local state

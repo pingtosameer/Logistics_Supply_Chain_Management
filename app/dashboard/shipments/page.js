@@ -4,6 +4,8 @@ import { getAllShipments } from "@/lib/data";
 import ShipmentList from "@/components/ShipmentList";
 import styles from "./page.module.css";
 import { useEffect, useState } from "react";
+import { ref, get, set, onValue } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 export default function ShipmentsPage() {
     const [shipments, setShipments] = useState([]);
@@ -20,12 +22,20 @@ export default function ShipmentsPage() {
     useEffect(() => {
         const loadData = async () => {
             const serverShipments = await getAllShipments();
-            const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-            // Deduplicate: If a shipment exists in localStorage, filter out the old server version
-            const localIds = new Set(localShipments.map(s => s.id));
-            const filteredServer = serverShipments.filter(s => !localIds.has(s.id));
 
-            setShipments([...localShipments, ...filteredServer]);
+            const shipmentsRef = ref(database, 'shipments');
+            onValue(shipmentsRef, (snapshot) => {
+                let localShipments = [];
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                }
+
+                const localIds = new Set(localShipments.map(s => s.id));
+                const filteredServer = serverShipments.filter(s => !localIds.has(s.id));
+
+                setShipments([...localShipments, ...filteredServer]);
+            });
         };
         loadData();
     }, []);
@@ -70,9 +80,16 @@ export default function ShipmentsPage() {
         // Update state
         setShipments(prev => [newShipment, ...prev]);
 
-        // Save to local storage
-        const localShipments = JSON.parse(localStorage.getItem('local_shipments') || '[]');
-        localStorage.setItem('local_shipments', JSON.stringify([newShipment, ...localShipments]));
+        // Save to Firebase
+        const shipmentsRef = ref(database, 'shipments');
+        get(shipmentsRef).then(snapshot => {
+            let localShipments = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                localShipments = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            }
+            set(shipmentsRef, [newShipment, ...localShipments]);
+        });
 
         // Reset and close
         setFormData({
